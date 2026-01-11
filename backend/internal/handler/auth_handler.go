@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 
 	"github.com/yourusername/skilltree/internal/models"
@@ -33,6 +34,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 
 	user, isNew, err := h.authService.RegisterOrGetUser(&req)
 	if err != nil {
+		log.Printf("Failed to register user: %v", err)
 		http.Error(w, `{"error":"Failed to register user"}`, http.StatusInternalServerError)
 		return
 	}

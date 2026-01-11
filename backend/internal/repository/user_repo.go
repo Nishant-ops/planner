@@ -18,18 +18,17 @@ func NewUserRepository(db *sql.DB) *UserRepository {
 // GetByFirebaseUID finds a user by their Firebase UID
 func (r *UserRepository) GetByFirebaseUID(firebaseUID string) (*models.User, error) {
 	query := `
-		SELECT id, firebase_uid, email, name, photo_url, created_at, updated_at
+		SELECT uid, email, name, created_at, updated_at
 		FROM users
-		WHERE firebase_uid = ?
+		WHERE uid = ?
 	`
 
 	var user models.User
+	var photoURL sql.NullString
 	err := r.db.QueryRow(query, firebaseUID).Scan(
-		&user.ID,
 		&user.FirebaseUID,
 		&user.Email,
 		&user.Name,
-		&user.PhotoURL,
 		&user.CreatedAt,
 		&user.UpdatedAt,
 	)
@@ -41,52 +40,31 @@ func (r *UserRepository) GetByFirebaseUID(firebaseUID string) (*models.User, err
 		return nil, fmt.Errorf("failed to get user: %w", err)
 	}
 
+	user.ID = 0 // Not used in this schema
+	user.PhotoURL = photoURL.String
+
 	return &user, nil
 }
 
 // Create creates a new user
 func (r *UserRepository) Create(req *models.CreateUserRequest) (*models.User, error) {
 	query := `
-		INSERT INTO users (firebase_uid, email, name, photo_url)
-		VALUES (?, ?, ?, ?)
+		INSERT INTO users (uid, email, name)
+		VALUES (?, ?, ?)
 	`
 
-	result, err := r.db.Exec(query, req.FirebaseUID, req.Email, req.Name, req.PhotoURL)
+	_, err := r.db.Exec(query, req.FirebaseUID, req.Email, req.Name)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create user: %w", err)
 	}
 
-	id, err := result.LastInsertId()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get last insert id: %w", err)
-	}
-
 	// Fetch the created user
-	return r.GetByID(id)
+	return r.GetByFirebaseUID(req.FirebaseUID)
 }
 
-// GetByID finds a user by their ID
+// GetByID finds a user by their ID (kept for compatibility, but uid is the primary key)
 func (r *UserRepository) GetByID(id int64) (*models.User, error) {
-	query := `
-		SELECT id, firebase_uid, email, name, photo_url, created_at, updated_at
-		FROM users
-		WHERE id = ?
-	`
-
-	var user models.User
-	err := r.db.QueryRow(query, id).Scan(
-		&user.ID,
-		&user.FirebaseUID,
-		&user.Email,
-		&user.Name,
-		&user.PhotoURL,
-		&user.CreatedAt,
-		&user.UpdatedAt,
-	)
-
-	if err != nil {
-		return nil, fmt.Errorf("failed to get user by id: %w", err)
-	}
-
-	return &user, nil
+	// Since uid is the primary key, this method is not directly usable
+	// Return error for now
+	return nil, fmt.Errorf("GetByID not supported with uid-based schema")
 }

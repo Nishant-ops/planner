@@ -15,6 +15,7 @@ func NewRouter(
 	authHandler *handler.AuthHandler,
 	masteryHandler *handler.MasteryHandler,
 	aiHandler *handler.AIHandler,
+	checkpointHandler *handler.CheckpointHandler,
 	firebaseAuth *auth.Client,
 	corsMiddleware *cors.Cors) *chi.Mux {
 
@@ -41,6 +42,10 @@ func NewRouter(
 			// Mastery endpoints
 			r.Get("/mastery", masteryHandler.GetMastery)
 			r.Put("/mastery/{topicKey}", masteryHandler.UpdateMastery)
+
+			// Checkpoint endpoints
+			r.Get("/checkpoints", checkpointHandler.GetCheckpoints)
+			r.Post("/checkpoints/attempt", checkpointHandler.AttemptCheckpoint)
 
 			// AI endpoints
 			r.Post("/ai/chat", aiHandler.Chat)

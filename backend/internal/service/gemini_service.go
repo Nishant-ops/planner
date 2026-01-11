@@ -103,6 +103,74 @@ Output JSON: { "verdict": "ADVANCE" or "REPEAT", "feedback": "Short, sharp techn
 	return result, nil
 }
 
+// JudgeCheckpoint validates checkpoint code against multiple required patterns
+func (g *GeminiService) JudgeCheckpoint(code string, tier int, requiredPatterns []string, problemDescription string) (map[string]interface{}, error) {
+	prompt := fmt.Sprintf(`
+Tier %d Checkpoint Problem:
+%s
+
+Required Patterns (ALL must be present):
+%v
+
+User Code:
+%s
+`, tier, problemDescription, requiredPatterns, code)
+
+	systemPrompt := `
+You are an EXTREMELY STRICT checkpoint auditor.
+This is a TIER CHECKPOINT - user must demonstrate mastery of ALL required patterns.
+
+Critical Rules:
+1. ALL patterns listed must be EXPLICITLY present in the code
+2. If even ONE pattern is missing or implemented via brute force, REJECT immediately
+3. Code must be optimal for ALL patterns (no O(N^2) when O(N) is possible with the pattern)
+4. Verify pattern correctness (e.g., real binary search with log(N), not linear scan)
+5. No shortcuts - each pattern must be properly implemented
+
+Output JSON format:
+{
+  "verdict": "ADVANCE" or "REPEAT",
+  "feedback": "Detailed critique of each pattern implementation (which worked, which didn't, and why)",
+  "patterns_found": ["PATTERN1", "PATTERN2"],
+  "missing_patterns": ["PATTERN3"]
+}
+
+If even ONE pattern is missing or incorrectly implemented, verdict MUST be "REPEAT".`
+
+	resultStr, err := g.callGeminiWithRetry(prompt, systemPrompt, true)
+	if err != nil {
+		return nil, err
+	}
+
+	// Parse JSON response
+	var result map[string]interface{}
+	if err := json.Unmarshal([]byte(resultStr), &result); err != nil {
+		// If parsing fails, return error verdict
+		return map[string]interface{}{
+			"verdict":          "ERROR",
+			"feedback":         "Failed to parse AI response",
+			"patterns_found":   []string{},
+			"missing_patterns": requiredPatterns,
+		}, nil
+	}
+
+	// Ensure required fields exist
+	if result["verdict"] == nil {
+		result["verdict"] = "ERROR"
+	}
+	if result["feedback"] == nil {
+		result["feedback"] = "No feedback provided"
+	}
+	if result["patterns_found"] == nil {
+		result["patterns_found"] = []string{}
+	}
+	if result["missing_patterns"] == nil {
+		result["missing_patterns"] = []string{}
+	}
+
+	return result, nil
+}
+
 // callGeminiWithRetry calls Gemini API with exponential backoff retry logic
 func (g *GeminiService) callGeminiWithRetry(prompt, systemPrompt string, jsonMode bool) (string, error) {
 	maxRetries := 3

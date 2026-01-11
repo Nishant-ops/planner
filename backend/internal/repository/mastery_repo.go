@@ -17,15 +17,15 @@ func NewMasteryRepository(db *sql.DB) *MasteryRepository {
 }
 
 // GetAllByUserID retrieves all mastery records for a user
-func (r *MasteryRepository) GetAllByUserID(userID int64) ([]models.UserMastery, error) {
+func (r *MasteryRepository) GetAllByUserID(firebaseUID string) ([]models.UserMastery, error) {
 	query := `
-		SELECT id, user_id, topic_key, confidence, solved_problems, updated_at
+		SELECT id, firebase_uid, topic_key, confidence, solved_problems, updated_at
 		FROM user_mastery
-		WHERE user_id = ?
+		WHERE firebase_uid = ?
 		ORDER BY topic_key
 	`
 
-	rows, err := r.db.Query(query, userID)
+	rows, err := r.db.Query(query, firebaseUID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query mastery: %w", err)
 	}
@@ -36,7 +36,7 @@ func (r *MasteryRepository) GetAllByUserID(userID int64) ([]models.UserMastery, 
 		var m models.UserMastery
 		var solvedJSON []byte
 
-		err := rows.Scan(&m.ID, &m.UserID, &m.TopicKey, &m.Confidence, &solvedJSON, &m.UpdatedAt)
+		err := rows.Scan(&m.ID, &m.FirebaseUID, &m.TopicKey, &m.Confidence, &solvedJSON, &m.UpdatedAt)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan mastery: %w", err)
 		}
@@ -53,18 +53,18 @@ func (r *MasteryRepository) GetAllByUserID(userID int64) ([]models.UserMastery, 
 }
 
 // GetByUserAndTopic retrieves mastery for a specific user and topic
-func (r *MasteryRepository) GetByUserAndTopic(userID int64, topicKey string) (*models.UserMastery, error) {
+func (r *MasteryRepository) GetByUserAndTopic(firebaseUID string, topicKey string) (*models.UserMastery, error) {
 	query := `
-		SELECT id, user_id, topic_key, confidence, solved_problems, updated_at
+		SELECT id, firebase_uid, topic_key, confidence, solved_problems, updated_at
 		FROM user_mastery
-		WHERE user_id = ? AND topic_key = ?
+		WHERE firebase_uid = ? AND topic_key = ?
 	`
 
 	var m models.UserMastery
 	var solvedJSON []byte
 
-	err := r.db.QueryRow(query, userID, topicKey).Scan(
-		&m.ID, &m.UserID, &m.TopicKey, &m.Confidence, &solvedJSON, &m.UpdatedAt,
+	err := r.db.QueryRow(query, firebaseUID, topicKey).Scan(
+		&m.ID, &m.FirebaseUID, &m.TopicKey, &m.Confidence, &solvedJSON, &m.UpdatedAt,
 	)
 
 	if err == sql.ErrNoRows {
@@ -89,14 +89,14 @@ func (r *MasteryRepository) Upsert(mastery *models.UserMastery) error {
 	}
 
 	query := `
-		INSERT INTO user_mastery (user_id, topic_key, confidence, solved_problems)
+		INSERT INTO user_mastery (firebase_uid, topic_key, confidence, solved_problems)
 		VALUES (?, ?, ?, ?)
 		ON DUPLICATE KEY UPDATE
 			confidence = VALUES(confidence),
 			solved_problems = VALUES(solved_problems)
 	`
 
-	_, err = r.db.Exec(query, mastery.UserID, mastery.TopicKey, mastery.Confidence, solvedJSON)
+	_, err = r.db.Exec(query, mastery.FirebaseUID, mastery.TopicKey, mastery.Confidence, solvedJSON)
 	if err != nil {
 		return fmt.Errorf("failed to upsert mastery: %w", err)
 	}
@@ -105,7 +105,7 @@ func (r *MasteryRepository) Upsert(mastery *models.UserMastery) error {
 }
 
 // InitializeUserMastery creates all mastery records for a new user (all at 0% confidence)
-func (r *MasteryRepository) InitializeUserMastery(userID int64, topics []string) error {
+func (r *MasteryRepository) InitializeUserMastery(firebaseUID string, topics []string) error {
 	tx, err := r.db.Begin()
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
@@ -113,8 +113,8 @@ func (r *MasteryRepository) InitializeUserMastery(userID int64, topics []string)
 	defer tx.Rollback()
 
 	query := `
-		INSERT INTO user_mastery (user_id, topic_key, confidence, solved_problems)
-		VALUES (?, ?, 0, '[]')
+		INSERT INTO user_mastery (firebase_uid, topic_key, confidence, solved_problems)
+		VALUES (?, ?, 0, JSON_ARRAY())
 	`
 
 	stmt, err := tx.Prepare(query)
@@ -124,7 +124,7 @@ func (r *MasteryRepository) InitializeUserMastery(userID int64, topics []string)
 	defer stmt.Close()
 
 	for _, topicKey := range topics {
-		if _, err := stmt.Exec(userID, topicKey); err != nil {
+		if _, err := stmt.Exec(firebaseUID, topicKey); err != nil {
 			return fmt.Errorf("failed to initialize mastery for %s: %w", topicKey, err)
 		}
 	}

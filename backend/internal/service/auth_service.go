@@ -9,14 +9,16 @@ import (
 )
 
 type AuthService struct {
-	userRepo    *repository.UserRepository
-	masteryRepo *repository.MasteryRepository
+	userRepo        *repository.UserRepository
+	masteryRepo     *repository.MasteryRepository
+	checkpointRepo  *repository.CheckpointRepository
 }
 
-func NewAuthService(userRepo *repository.UserRepository, masteryRepo *repository.MasteryRepository) *AuthService {
+func NewAuthService(userRepo *repository.UserRepository, masteryRepo *repository.MasteryRepository, checkpointRepo *repository.CheckpointRepository) *AuthService {
 	return &AuthService{
-		userRepo:    userRepo,
-		masteryRepo: masteryRepo,
+		userRepo:        userRepo,
+		masteryRepo:     masteryRepo,
+		checkpointRepo:  checkpointRepo,
 	}
 }
 
@@ -40,8 +42,13 @@ func (s *AuthService) RegisterOrGetUser(req *models.CreateUserRequest) (*models.
 	}
 
 	// Initialize mastery for all 22 topics
-	if err := s.masteryRepo.InitializeUserMastery(user.ID, config.AllTopics); err != nil {
+	if err := s.masteryRepo.InitializeUserMastery(user.FirebaseUID, config.AllTopics); err != nil {
 		return nil, false, fmt.Errorf("failed to initialize mastery: %w", err)
+	}
+
+	// Initialize checkpoints for all 7 tiers (0-6)
+	if err := s.checkpointRepo.InitializeCheckpoints(user.FirebaseUID); err != nil {
+		return nil, false, fmt.Errorf("failed to initialize checkpoints: %w", err)
 	}
 
 	return user, true, nil

@@ -51,22 +51,25 @@ func main() {
 	// Initialize repositories
 	userRepo := repository.NewUserRepository(db)
 	masteryRepo := repository.NewMasteryRepository(db)
+	checkpointRepo := repository.NewCheckpointRepository(db)
 
 	// Initialize services
-	authService := service.NewAuthService(userRepo, masteryRepo)
+	authService := service.NewAuthService(userRepo, masteryRepo, checkpointRepo)
 	masteryService := service.NewMasteryService(masteryRepo, userRepo)
 	geminiService := service.NewGeminiService(cfg.GeminiAPIKey, cfg.GeminiAPIURL)
+	checkpointService := service.NewCheckpointService(checkpointRepo, masteryRepo, geminiService)
 
 	// Initialize handlers
 	authHandler := handler.NewAuthHandler(authService)
 	masteryHandler := handler.NewMasteryHandler(masteryService)
 	aiHandler := handler.NewAIHandler(geminiService, masteryService)
+	checkpointHandler := handler.NewCheckpointHandler(checkpointService)
 
 	// Initialize middleware
 	corsMiddleware := middleware.CORSMiddleware(cfg.CORSAllowedOrigins)
 
 	// Setup router
-	r := router.NewRouter(authHandler, masteryHandler, aiHandler, firebaseAuth, corsMiddleware)
+	r := router.NewRouter(authHandler, masteryHandler, aiHandler, checkpointHandler, firebaseAuth, corsMiddleware)
 
 	// Create server
 	srv := &http.Server{

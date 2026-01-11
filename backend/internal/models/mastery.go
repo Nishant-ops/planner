@@ -4,7 +4,7 @@ import "time"
 
 type UserMastery struct {
 	ID             int64     `json:"id"`
-	UserID         int64     `json:"user_id"`
+	FirebaseUID    string    `json:"firebase_uid"`
 	TopicKey       string    `json:"topic_key"`
 	Confidence     int       `json:"confidence"`
 	SolvedProblems []string  `json:"solved_problems"`

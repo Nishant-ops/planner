@@ -31,7 +31,7 @@ func (s *MasteryService) GetMasteryByFirebaseUID(firebaseUID string) (*models.Ma
 	}
 
 	// Get all mastery records
-	masteries, err := s.masteryRepo.GetAllByUserID(user.ID)
+	masteries, err := s.masteryRepo.GetAllByUserID(user.FirebaseUID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get mastery: %w", err)
 	}
@@ -69,7 +69,7 @@ func (s *MasteryService) UpdateMastery(firebaseUID, topicKey string, req *models
 
 	// Create mastery record
 	mastery := &models.UserMastery{
-		UserID:         user.ID,
+		FirebaseUID:    user.FirebaseUID,
 		TopicKey:       topicKey,
 		Confidence:     req.Confidence,
 		SolvedProblems: req.SolvedProblems,

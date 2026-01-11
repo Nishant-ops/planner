@@ -3,7 +3,7 @@ CREATE TABLE user_mastery (
     user_id BIGINT UNSIGNED NOT NULL,
     topic_key VARCHAR(50) NOT NULL,
     confidence TINYINT UNSIGNED DEFAULT 0 CHECK (confidence >= 0 AND confidence <= 100),
-    solved_problems JSON NOT NULL DEFAULT '[]',
+    solved_problems JSON NOT NULL,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     UNIQUE KEY unique_user_topic (user_id, topic_key),
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
