@@ -1,0 +1,36 @@
+# Environment files
+.env
+.env.local
+.env.development
+.env.production
+
+# Firebase service account (NEVER COMMIT THIS!)
+backend/firebase-service-account.json
+backend/.env
+frontend/.env
+
+# Dependencies
+node_modules/
+backend/bin/
+
+# Build outputs
+frontend/dist/
+frontend/build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Go
+backend/bin/
+backend/tmp/
