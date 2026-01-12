@@ -1,6 +1,26 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
 @import "tailwindcss";
 
+@theme {
+  --color-cyber-light: #f8fafc;
+  --color-cyber-dark: #030712;
+  --color-cyber-gray: #1e293b;
+  --color-cyber-blue: #3b82f6;
+  --color-cyber-purple: #8b5cf6;
+  --color-cyber-pink: #ec4899;
+  --color-cyber-yellow: #eab308;
+  --color-cyber-green: #22c55e;
+  --color-cyber-red: #ef4444;
+  --color-cyber-glass: rgba(15, 23, 42, 0.6);
+
+  --font-sans: 'Inter', sans-serif;
+  --font-display: 'Outfit', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  --shadow-neon-blue: 0 0 10px rgba(59, 130, 246, 0.5), 0 0 20px rgba(59, 130, 246, 0.3);
+  --shadow-neon-purple: 0 0 10px rgba(139, 92, 246, 0.5), 0 0 20px rgba(139, 92, 246, 0.3);
+}
+
 :root {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   line-height: 1.5;
